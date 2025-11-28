@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#define INIT_MAX_DEPTH 6 
-#define MOVE_MAX_DEPTH 100 
+#define INIT_MAX_DEPTH 9 
+#define MOVE_MAX_DEPTH 5
 
 static const char g_symbolX = 'x';
 static const char g_symbolO = 'o';
@@ -77,15 +77,31 @@ int evaluate(char board[g_size][g_size])
     return 0;
 }
 
-bool isValidMove(Spot to, Spot from) 
-{ 
-    int rowDistance = abs( to.row - from.row );
-    int columnDistance = abs( to.column - from.column );
-
-    if(rowDistance > 1 || columnDistance > 1 || (rowDistance + columnDistance) == 0)
+bool isValidMove(Spot to, Spot from)
+{
+    if (from.row < 0 || from.row > 2 || from.column < 0 || from.column > 2 || 
+            to.row < 0 || to.row > 2 || to.column < 0 || to.column > 2)
         return false;
 
-    return true;
+    int rowDiff = abs(from.row - to.row);
+    int colDiff = abs(from.column - to.column);
+
+    if (rowDiff == 0 && colDiff == 0) 
+        return false; 
+
+    if ((rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1))
+        return true;
+
+    if (rowDiff == 1 && colDiff == 1)
+    {
+        bool isStartCenter = (from.row == 1 && from.column == 1);
+        bool isEndCenter = (to.row == 1 && to.column == 1);
+
+        if (isStartCenter || isEndCenter)
+            return true;
+    }
+
+    return false;
 }
 
 Spot getSpot() 
@@ -146,6 +162,18 @@ bool move(char c[g_size][g_size], bool isTurnX)
     return true;
 }
 
+void check(char c[3][3])
+{ 
+    int score = evaluate(c);
+    if(score == 10)
+        printf("\nx won!\n");
+    if(score == -10)
+        printf("\no won!\n");
+    if(score == 0)
+        printf("Its a draw");
+}
+
+
 void multiPlayer() 
 { 
     bool isTurnX = false;
@@ -188,7 +216,7 @@ void multiPlayer()
     }
     printf("\n Results: ");
     printBoard(c);
-    printf("\n%c's won! \n", isTurnX? g_symbolX : g_symbolO);
+    check(c);
 }
 
 bool isMoveAva(char c[g_size][g_size])
@@ -238,6 +266,7 @@ int moveMiniMax( char c[g_size][g_size], int depth, bool isMax)
                             if( isValidMove(s.to, s.from) && c[s.to.row][s.to.column] == g_empty)
                             { 
                                 c[s.to.row][s.to.column] = c[s.from.row][s.from.column];
+                                c[s.from.row][s.from.column] = g_empty;
                                 int newValue = moveMiniMax(c, depth - 1, !isMax);
                                 best = (best > newValue)? best : newValue;
                                 c[s.from.row][s.from.column] = g_symbolX;
@@ -275,6 +304,7 @@ int moveMiniMax( char c[g_size][g_size], int depth, bool isMax)
                             if( isValidMove(s.to, s.from) && c[s.to.row][s.to.column] == g_empty)
                             { 
                                 c[s.to.row][s.to.column] = c[s.from.row][s.from.column];
+                                c[s.from.row][s.from.column] = g_empty;
                                 int newValue = moveMiniMax(c, depth -1, !isMax);
                                 best = (best < newValue)? best : newValue;
                                 c[s.from.row][s.from.column] = g_symbolO;
@@ -457,59 +487,69 @@ void computerPlace(char c[3][3], bool isTurnX)
 void computerMove(char c[3][3], bool isTurnX)
 { 
     Move selected = moveBestMove(c, isTurnX);
-    if(selected.from.row == -1 && selected.from.column == -1)
+    if(selected.from.row == -1)
     {
-        if(selected.to.row, selected.to.column == -1)
-        {
-            return;
-        }
+        return;
     }
     c[selected.from.row][selected.from.column] = g_empty;
     c[selected.to.row][selected.to.column] = isTurnX? g_symbolX : g_symbolO;
 }
 
-void singlePlayer()
+void singlePlayer() 
 { 
-    char board[g_size][g_size] = {};
-    while(true)
+    char board[3][3] = { 
+        { g_empty, g_empty, g_empty },
+        { g_empty, g_empty, g_empty },
+        { g_empty, g_empty, g_empty }
+    };
+    bool isTurnX = false;
+
+    while(!isInit(board))
     { 
-        if( evaluate(board) != 0 )
-        {
-            if(evaluate(board) == 10)
-                printf("\nX won!\n");
-            if(evaluate(board) == -10)
-                printf("\nO won!\n");
-            return;
-        }       
-
-        if(isInit(board))
-            break;
-
-        Spot choice = getSpot();
-        if(board[choice.row][choice.column] != g_empty)
+        printf("\no's turn\n");
+        Spot s = getSpot();
+        if(board[s.row][s.column] != g_empty)
         { 
-            printf("\nSorry Mr. That spot is already in use.\n");
+            printf("\nThat spot is not empty:\n");
             continue;
         }
-
-        board[choice.row][choice.column] = g_symbolO;
+        board[s.row][s.column] = g_symbolO;
         computerPlace(board, true);
         printBoard(board);
-        printf("\n");
+        if(evaluate(board) != 0)
+        { 
+            check(board);
+            return;
+        }
+        isTurnX = !isTurnX;
     }
     while(true) 
     { 
-        if( evaluate(board) != 0 )
-        {
-            if(evaluate(board) == 10)
-                printf("\nX won!\n");
-            if(evaluate(board) == -10)
-                printf("\nO won!\n");
+        if(evaluate(board))
+        { 
+            check(board);
             return;
         }       
-
+        printf("\no's turn\n");
+        if(!move(board, false))
+        {
+            printf("Try again:");
+            continue;
+        }
         computerMove(board, true);
         printBoard(board);
+    }
+}
+
+void botVsBot() 
+{ 
+    bool isTurnX = true;
+    char board[3][3] = {};
+    while(!isInit(board))
+    { 
+        computerPlace(board, isTurnX);
+        printBoard(board);
+        isTurnX = !isTurnX;
     }
 }
 
