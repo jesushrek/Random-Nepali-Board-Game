@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#define INIT_MAX_DEPTH 9 
+#define INIT_MAX_DEPTH 9
 #define MOVE_MAX_DEPTH 5
 
 static const char g_symbolX = 'x';
@@ -540,18 +540,20 @@ void singlePlayer()
         printBoard(board);
     }
 }
-
-void botVsBot() 
-{ 
-    bool isTurnX = true;
-    char board[3][3] = {};
-    while(!isInit(board))
-    { 
-        computerPlace(board, isTurnX);
-        printBoard(board);
-        isTurnX = !isTurnX;
-    }
-}
+/*
+   this is not a good idea
+   void botVsBot() 
+   { 
+   bool isTurnX = true;
+   char board[3][3] = {};
+   while(!isInit(board))
+   { 
+   computerPlace(board, isTurnX);
+   printBoard(board);
+   isTurnX = !isTurnX;
+   }
+   }
+   */
 
 int main() 
 { 
